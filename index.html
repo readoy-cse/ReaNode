@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NodePad - VS Style</title>
+  <script src="https://unpkg.com/monaco-editor@0.45.0/min/vs/loader.js"></script>
+  <style>
+    :root {
+      --bg: #100a1c;
+      --panel: #1a1230;
+      --panel-2: #24153f;
+      --editor-shell: #0e0918;
+      --line: #59337d;
+      --text: #fdf3ff;
+      --muted: #c8a9e3;
+      --accent: #ff4fb5;
+      --accent-2: #ff97dc;
+      --status: #b81f88;
+      --ok: #79f5b6;
+      --warn: #ffd479;
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      overflow: hidden;
+    }
+
+    .app {
+      height: 100%;
+      display: grid;
+      grid-template-rows: 30px 1fr 24px;
+      background: var(--bg);
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 0 10px;
+      background: #231536;
+      border-bottom: 1px solid var(--line);
+      font-size: 10px;
+      user-select: none;
+    }
+
+    .brand {
+      font-weight: 600;
+      letter-spacing: 0.2px;
+      color: #f2d6ff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 12px rgba(255, 93, 177, 0.65);
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .layout {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 32px 300px 1fr;
+    }
+
+    .activitybar {
+      background: #150d25;
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 8px 0;
+      gap: 8px;
+    }
+
+    .activity-btn {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 10px;
+    }
+
+    .activity-btn:hover,
+    .activity-btn.active {
+      color: var(--accent-2);
+      border-color: #5f457f;
+      background: #271f39;
+    }
+
+    .sidebar {
+      min-width: 0;
+      background: var(--panel);
+      border-right: 1px solid var(--line);
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      gap: 8px;
+      padding: 10px;
+      overflow: hidden;
+    }
+
+    .explorer-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #cdb7e8;
+    }
+
+    .search-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+    }
+
+    .field,
+    .select,
+    .btn {
+      border: 1px solid #69448f;
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: inherit;
+      color: var(--text);
+      background: #2d1c47;
+      outline: none;
+    }
+
+    .field,
+    .select {
+      width: 100%;
+      padding: 7px 8px;
+    }
+
+    .field:focus,
+    .select:focus {
+      border-color: var(--accent-2);
+      box-shadow: 0 0 0 1px var(--accent-2);
+    }
+
+    .btn {
+      padding: 6px 10px;
+      cursor: pointer;
+      background: #3a2157;
+    }
+
+    .btn:hover {
+      border-color: #9d69cf;
+      background: #4a2b6e;
+    }
+
+    .btn.primary {
+      background: #df2d99;
+      border-color: #df2d99;
+    }
+
+    .btn.primary:hover {
+      background: #f145ad;
+      border-color: #f145ad;
+    }
+
+    .btn.danger {
+      background: #5a2248;
+      border-color: #8a3a6e;
+      color: #ffd8f1;
+    }
+
+    .btn.danger:hover {
+      background: #72305a;
+      border-color: #b65790;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 11px;
+      margin: 0;
+    }
+
+    .list {
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-items: stretch;
+      justify-content: flex-start;
+      align-content: flex-start;
+    }
+
+    .note-card {
+      border: 1px solid #6c4297;
+      border-radius: 6px;
+      background: #28173f;
+      padding: 4px 6px;
+      cursor: pointer;
+    }
+
+    .note-card:hover {
+      border-color: #af73e7;
+      background: #341b55;
+    }
+
+    .note-card.active {
+      border-color: var(--accent-2);
+      background: #3d1f63;
+    }
+
+    .note-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 5px;
+    }
+
+    .note-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      flex-shrink: 0;
+    }
+
+    .note-title {
+      font-size: 10px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .mono { font-family: Consolas, monospace; }
+
+    .editor-panel {
+      min-width: 0;
+      display: grid;
+      grid-template-rows: 35px 1fr;
+      background: var(--editor-shell);
+    }
+
+    .tabs {
+      display: flex;
+      align-items: center;
+      overflow: auto;
+      gap: 2px;
+      background: #1a102a;
+      border-bottom: 1px solid var(--line);
+      padding: 0 4px;
+    }
+
+    .tab {
+      height: 30px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid transparent;
+      border-radius: 4px 4px 0 0;
+      background: #2a1742;
+      color: #d8c9ef;
+      padding: 0 10px;
+      font-size: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .tab:hover { background: #3a1f5d; }
+
+    .tab.active {
+      background: #221338;
+      border-color: #8557b7;
+      border-bottom-color: #221338;
+      color: #ffd5ef;
+    }
+
+    .tab-close {
+      border: 0;
+      background: transparent;
+      color: #f6b5df;
+      cursor: pointer;
+      font-size: 12px;
+      padding: 0;
+    }
+
+    #editor {
+      min-height: 0;
+      height: 100%;
+    }
+
+    .statusbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 0 10px;
+      background: var(--status);
+      color: #ffe7f7;
+      font-size: 11px;
+      border-top: 1px solid #da6eb6;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    .statusbar > div {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .modal-wrap {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(16, 11, 26, 0.7);
+      padding: 16px;
+      z-index: 40;
+    }
+
+    .modal-wrap.show { display: flex; }
+
+    .modal {
+      width: min(420px, 100%);
+      background: #241a35;
+      border: 1px solid #614783;
+      border-radius: 8px;
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .empty {
+      border: 1px dashed #6d5292;
+      border-radius: 6px;
+      color: var(--muted);
+      text-align: center;
+      padding: 16px 10px;
+      font-size: 11px;
+      background: #2a1f3f;
+    }
+
+    .app.sidebar-collapsed .layout {
+      grid-template-columns: 32px 1fr;
+    }
+
+    .app.sidebar-collapsed .sidebar {
+      display: none;
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 32px 1fr;
+      }
+
+      .sidebar {
+        display: none;
+      }
+
+      .app.sidebar-open-mobile .layout {
+        grid-template-columns: 32px 1fr;
+      }
+
+      .app.sidebar-open-mobile .sidebar {
+        display: grid;
+        position: fixed;
+        top: 38px;
+        bottom: 24px;
+        left: 40px;
+        width: min(320px, calc(100vw - 40px));
+        z-index: 30;
+        box-shadow: 0 0 0 9999px rgba(10, 10, 20, 0.35);
+      }
+
+      .top-actions {
+        max-width: 68%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app" class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-dot"></span>
+        <span>ReaNode</span>
+      </div>
+      <div class="top-actions">
+        <button id="toggleSidebarBtn" class="btn">Explorer</button>
+        <button id="newBtn" class="btn primary">New</button>
+        <button id="renameBtn" class="btn">Rename</button>
+        <button id="duplicateBtn" class="btn">Duplicate</button>
+        <button id="deleteBtn" class="btn">Delete</button>
+        <button id="exportBtn" class="btn">Export</button>
+        <button id="importBtn" class="btn">Import</button>
+        <input id="importInput" type="file" hidden />
+      </div>
+    </header>
+
+    <main class="layout">
+      <aside class="activitybar">
+        <button id="activityExplorer" class="activity-btn active" title="Toggle Explorer">EX</button>
+      </aside>
+
+      <aside id="sidebar" class="sidebar">
+        <div class="explorer-title">Explorer</div>
+        <div class="search-row">
+          <input id="searchInput" class="field" placeholder="Search notes..." />
+          <select id="langFilter" class="select">
+            <option value="all">All</option>
+            <option value="markdown">Markdown</option>
+            <option value="javascript">JavaScript</option>
+            <option value="typescript">TypeScript</option>
+            <option value="json">JSON</option>
+            <option value="yaml">YAML</option>
+            <option value="shell">Shell</option>
+            <option value="powershell">PowerShell</option>
+            <option value="dockerfile">Dockerfile</option>
+            <option value="python">Python</option>
+            <option value="html">HTML</option>
+            <option value="css">CSS</option>
+            <option value="plaintext">Plain Text</option>
+          </select>
+        </div>
+        <div id="noteList" class="list"></div>
+        <p class="hint">@readoy</p>
+      </aside>
+
+      <section class="editor-panel">
+        <div id="tabs" class="tabs"></div>
+        <div id="editor"></div>
+      </section>
+    </main>
+
+    <footer class="statusbar">
+      <div id="stats">No note selected</div>
+      <div id="saveState">Ready</div>
+      <div class="mono">Ctrl/Cmd+N | Ctrl/Cmd+S | Ctrl/Cmd+K | Ctrl/Cmd+B | Alt+1..9</div>
+    </footer>
+  </div>
+
+  <div id="modalWrap" class="modal-wrap" role="dialog" aria-modal="true">
+    <div class="modal">
+      <h3 style="margin:0; font-size:14px;">Create Note</h3>
+      <input id="newFileName" class="field" placeholder="filename.ext (e.g. deployment.yaml, deploy.sh, Dockerfile)" />
+      <div style="display:flex; justify-content:flex-end; gap:8px;">
+        <button id="cancelCreate" class="btn">Cancel</button>
+        <button id="confirmCreate" class="btn primary">Create</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "nodepad.workspace.v3";
+    const models = new Map();
+    const saveState = {
+      lastSavedAt: null,
+      pending: false
+    };
+
+    const state = {
+      notes: [],
+      openIds: [],
+      activeId: null,
+      search: "",
+      languageFilter: "all",
+      sidebarCollapsed: false
+    };
+
+    const dom = {
+      app: document.getElementById("app"),
+      sidebar: document.getElementById("sidebar"),
+      toggleSidebarBtn: document.getElementById("toggleSidebarBtn"),
+      activityExplorer: document.getElementById("activityExplorer"),
+      editor: document.getElementById("editor"),
+      noteList: document.getElementById("noteList"),
+      tabs: document.getElementById("tabs"),
+      stats: document.getElementById("stats"),
+      saveState: document.getElementById("saveState"),
+      searchInput: document.getElementById("searchInput"),
+      langFilter: document.getElementById("langFilter"),
+      modalWrap: document.getElementById("modalWrap"),
+      newFileName: document.getElementById("newFileName"),
+      importInput: document.getElementById("importInput")
+    };
+
+    let editor = null;
+    let changeDisposable = null;
+    let saveTimer = null;
+
+    const extensionMap = {
+      markdown: "md",
+      javascript: "js",
+      typescript: "ts",
+      json: "json",
+      yaml: "yml",
+      shell: "sh",
+      powershell: "ps1",
+      dockerfile: "",
+      python: "py",
+      html: "html",
+      css: "css",
+      plaintext: "txt"
+    };
+
+    const languageFromExt = {
+      md: "markdown",
+      js: "javascript",
+      ts: "typescript",
+      json: "json",
+      yml: "yaml",
+      yaml: "yaml",
+      sh: "shell",
+      bash: "shell",
+      zsh: "shell",
+      ps1: "powershell",
+      env: "shell",
+      toml: "plaintext",
+      ini: "plaintext",
+      conf: "plaintext",
+      cfg: "plaintext",
+      tf: "plaintext",
+      tfvars: "plaintext",
+      py: "python",
+      html: "html",
+      css: "css",
+      txt: "plaintext"
+    };
+
+    function uid() {
+      return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    }
+
+    function now() {
+      return Date.now();
+    }
+
+    function isMobile() {
+      return window.matchMedia("(max-width: 900px)").matches;
+    }
+
+    function formatTime(ts) {
+      const delta = Math.floor((Date.now() - ts) / 1000);
+      if (delta < 60) return `${delta}s ago`;
+      if (delta < 3600) return `${Math.floor(delta / 60)}m ago`;
+      if (delta < 86400) return `${Math.floor(delta / 3600)}h ago`;
+      return `${Math.floor(delta / 86400)}d ago`;
+    }
+
+    function defaultContent(language) {
+      switch (language) {
+        case "markdown":
+          return "# Ops Runbook\n\n## Service\n\n## Change\n\n## Rollback\n\n## Verification";
+        case "javascript":
+          return "function hello() {\n  console.log('Hello NodePad');\n}\n";
+        case "typescript":
+          return "type User = { name: string };\n\nconst user: User = { name: 'NodePad' };";
+        case "json":
+          return '{\n  \"service\": \"api\",\n  \"replicas\": 2,\n  \"env\": \"prod\"\n}';
+        case "yaml":
+          return "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: app\nspec:\n  replicas: 2";
+        case "shell":
+          return "#!/usr/bin/env bash\nset -euo pipefail\n\necho \"Deploy step\"";
+        case "powershell":
+          return "Set-StrictMode -Version Latest\n$ErrorActionPreference = 'Stop'\nWrite-Host \"Deploy step\"";
+        case "dockerfile":
+          return "FROM alpine:3.20\nWORKDIR /app\nCOPY . .\nCMD [\"sh\", \"-c\", \"echo hello\"]";
+        case "python":
+          return "def main():\n    print('Hello NodePad')\n\nif __name__ == '__main__':\n    main()\n";
+        case "html":
+          return "<main>\n  <h1>NodePad</h1>\n</main>";
+        case "css":
+          return "body {\n  margin: 0;\n}\n";
+        default:
+          return "";
+      }
+    }
+
+    function createNote({ title, language, content }) {
+      const note = {
+        id: uid(),
+        title: title.trim() || "Untitled",
+        language: language || "plaintext",
+        content: typeof content === "string" ? content : defaultContent(language || "plaintext"),
+        pinned: false,
+        dirty: false,
+        createdAt: now(),
+        updatedAt: now()
+      };
+      state.notes.push(note);
+      openNote(note.id, true);
+      persistNow();
+      renderAll();
+      return note;
+    }
+
+    function getFileName(note) {
+      return note.fileExt ? `${note.title}.${note.fileExt}` : note.title;
+    }
+
+    function parseFileNameInput(input) {
+      const raw = (input || "").trim() || "untitled.txt";
+      const lowered = raw.toLowerCase();
+
+      if (lowered === "dockerfile" || lowered === ".env" || lowered === "jenkinsfile") {
+        if (lowered === "dockerfile") return { title: "Dockerfile", fileExt: "", language: "dockerfile" };
+        if (lowered === ".env") return { title: ".env", fileExt: "", language: "shell" };
+        return { title: "Jenkinsfile", fileExt: "", language: "plaintext" };
+      }
+
+      const dot = raw.lastIndexOf(".");
+      if (dot <= 0 || dot === raw.length - 1) {
+        return { title: raw, fileExt: "", language: "plaintext" };
+      }
+
+      const title = raw.slice(0, dot);
+      const fileExt = raw.slice(dot + 1);
+      const language = languageFromExt[fileExt.toLowerCase()] || "plaintext";
+      return { title, fileExt, language };
+    }
+
+    function createFileNote(fileName, content) {
+      const parsed = parseFileNameInput(fileName);
+      const note = createNote({
+        title: parsed.title,
+        language: parsed.language,
+        content: typeof content === "string" ? content : defaultContent(parsed.language)
+      });
+      note.fileExt = parsed.fileExt;
+      note.updatedAt = now();
+      persistNow();
+      renderAll();
+      return note;
+    }
+
+    function getNote(id) {
+      return state.notes.find((n) => n.id === id) || null;
+    }
+
+    function getActiveNote() {
+      return state.activeId ? getNote(state.activeId) : null;
+    }
+
+    function ensureModel(note) {
+      if (!models.has(note.id)) {
+        const model = monaco.editor.createModel(note.content, note.language);
+        models.set(note.id, model);
+      }
+      return models.get(note.id);
+    }
+
+    function disposeModel(noteId) {
+      const model = models.get(noteId);
+      if (model) {
+        model.dispose();
+        models.delete(noteId);
+      }
+    }
+
+    function openNote(noteId, makeActive) {
+      if (!state.openIds.includes(noteId)) {
+        state.openIds.push(noteId);
+      }
+      if (makeActive) {
+        setActive(noteId);
+      } else {
+        renderTabs();
+      }
+    }
+
+    function closeTab(noteId) {
+      state.openIds = state.openIds.filter((id) => id !== noteId);
+      if (state.activeId === noteId) {
+        const fallback = state.openIds[state.openIds.length - 1] || null;
+        state.activeId = fallback;
+        if (fallback) {
+          setActive(fallback);
+        } else {
+          editor.setModel(null);
+          renderStats();
+          renderSaveState();
+        }
+      }
+      persistNow();
+      renderTabs();
+    }
+
+    function syncActiveFromEditor() {
+      const note = getActiveNote();
+      if (!note || !editor.getModel()) return;
+      note.content = editor.getValue();
+      note.updatedAt = now();
+    }
+
+    function setActive(noteId) {
+      const note = getNote(noteId);
+      if (!note) return;
+      syncActiveFromEditor();
+      state.activeId = noteId;
+      const model = ensureModel(note);
+      if (changeDisposable) changeDisposable.dispose();
+      editor.setModel(model);
+      changeDisposable = model.onDidChangeContent(() => {
+        const active = getActiveNote();
+        if (!active) return;
+        active.content = model.getValue();
+        active.updatedAt = now();
+        active.dirty = true;
+        renderStats();
+        renderTabs();
+        renderNoteList();
+        scheduleSave();
+      });
+      renderAll();
+      editor.focus();
+    }
+
+    function sortedNotes() {
+      const filtered = state.notes.filter((note) => {
+        const q = state.search.trim().toLowerCase();
+        const queryOk = !q ||
+          note.title.toLowerCase().includes(q) ||
+          note.content.toLowerCase().includes(q);
+        const langOk = state.languageFilter === "all" || note.language === state.languageFilter;
+        return queryOk && langOk;
+      });
+
+      return filtered.sort((a, b) => {
+        if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+        const createdDiff = a.createdAt - b.createdAt;
+        if (createdDiff !== 0) return createdDiff;
+        const updatedDiff = a.updatedAt - b.updatedAt;
+        if (updatedDiff !== 0) return updatedDiff;
+        return a.title.localeCompare(b.title);
+      });
+    }
+
+    function renderNoteList() {
+      const list = sortedNotes();
+      dom.noteList.innerHTML = "";
+
+      if (list.length === 0) {
+        dom.noteList.innerHTML = '<div class="empty">No notes match this view.</div>';
+        return;
+      }
+
+      list.forEach((note) => {
+        const card = document.createElement("div");
+        card.className = `note-card ${note.id === state.activeId ? "active" : ""}`;
+        card.onclick = () => openNote(note.id, true);
+
+        const pinLabel = note.pinned ? "Unpin" : "Pin";
+
+        card.innerHTML = `
+          <div class="note-line">
+            <div class="note-title">${escapeHtml(getFileName(note))}</div>
+            <div class="note-actions">
+              <button class="btn mono note-pin-btn" style="padding:2px 6px; font-size:10px;">${pinLabel}</button>
+              <button class="btn danger mono note-del-btn" style="padding:2px 6px; font-size:10px;">Del</button>
+            </div>
+          </div>
+        `;
+
+        const pinBtn = card.querySelector(".note-pin-btn");
+        const delBtn = card.querySelector(".note-del-btn");
+        pinBtn.onclick = (event) => {
+          event.stopPropagation();
+          note.pinned = !note.pinned;
+          note.updatedAt = now();
+          persistNow();
+          renderNoteList();
+        };
+        delBtn.onclick = (event) => {
+          event.stopPropagation();
+          deleteNoteById(note.id);
+        };
+
+        dom.noteList.appendChild(card);
+      });
+    }
+
+    function renderTabs() {
+      dom.tabs.innerHTML = "";
+      state.openIds.forEach((id) => {
+        const note = getNote(id);
+        if (!note) return;
+
+        const tab = document.createElement("div");
+        tab.className = `tab ${state.activeId === id ? "active" : ""}`;
+        tab.onclick = () => setActive(id);
+        tab.innerHTML = `
+          <span>${escapeHtml(getFileName(note))}${note.dirty ? "*" : ""}</span>
+          <button class="tab-close" aria-label="Close tab">x</button>
+        `;
+
+        const close = tab.querySelector("button");
+        close.onclick = (event) => {
+          event.stopPropagation();
+          closeTab(id);
+        };
+
+        dom.tabs.appendChild(tab);
+      });
+    }
+
+    function renderStats() {
+      const note = getActiveNote();
+      if (!note) {
+        dom.stats.textContent = "No note selected";
+        return;
+      }
+      const text = note.content || "";
+      const lines = text.length ? text.split(/\r?\n/).length : 1;
+      const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+      const chars = text.length;
+      dom.stats.textContent = `${getFileName(note)} | ${note.language} | ${lines} lines | ${words} words | ${chars} chars`;
+    }
+
+    function renderSaveState() {
+      if (saveState.pending) {
+        dom.saveState.textContent = "Saving...";
+        dom.saveState.style.color = "var(--warn)";
+        return;
+      }
+      if (!saveState.lastSavedAt) {
+        dom.saveState.textContent = "Ready";
+        dom.saveState.style.color = "#ffe7f7";
+        return;
+      }
+      dom.saveState.textContent = `Saved ${formatTime(saveState.lastSavedAt)}`;
+      dom.saveState.style.color = "var(--ok)";
+    }
+
+    function renderAll() {
+      renderNoteList();
+      renderTabs();
+      renderStats();
+      renderSaveState();
+    }
+
+    function escapeHtml(value) {
+      return value
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function applySidebarState() {
+      if (state.sidebarCollapsed) {
+        dom.app.classList.add("sidebar-collapsed");
+        dom.toggleSidebarBtn.textContent = "Show Explorer";
+      } else {
+        dom.app.classList.remove("sidebar-collapsed");
+        dom.toggleSidebarBtn.textContent = "Hide Explorer";
+      }
+    }
+
+    function toggleSidebar() {
+      if (isMobile()) {
+        dom.app.classList.toggle("sidebar-open-mobile");
+        return;
+      }
+      state.sidebarCollapsed = !state.sidebarCollapsed;
+      applySidebarState();
+      persistNow();
+      if (editor) editor.layout();
+    }
+
+    function persistNow() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          notes: state.notes,
+          openIds: state.openIds,
+          activeId: state.activeId,
+          sidebarCollapsed: state.sidebarCollapsed
+        }));
+        saveState.lastSavedAt = now();
+        saveState.pending = false;
+        state.notes.forEach((n) => { n.dirty = false; });
+        renderSaveState();
+      } catch (error) {
+        console.error("Failed to save workspace:", error);
+        dom.saveState.textContent = "Storage error";
+        dom.saveState.style.color = "var(--warn)";
+      }
+    }
+
+    function scheduleSave() {
+      saveState.pending = true;
+      renderSaveState();
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => {
+        persistNow();
+        renderTabs();
+        renderNoteList();
+      }, 450);
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return false;
+        const data = JSON.parse(raw);
+        if (!Array.isArray(data.notes)) return false;
+        state.notes = data.notes.map((note) => ({
+          id: note.id || uid(),
+          title: String(note.title || "Untitled"),
+          fileExt: String(note.fileExt || ""),
+          language: note.language || "plaintext",
+          content: String(note.content || ""),
+          pinned: Boolean(note.pinned),
+          dirty: false,
+          createdAt: Number(note.createdAt || now()),
+          updatedAt: Number(note.updatedAt || now())
+        }));
+        state.openIds = Array.isArray(data.openIds) ? data.openIds.filter((id) => state.notes.some((n) => n.id === id)) : [];
+        state.activeId = state.notes.some((n) => n.id === data.activeId) ? data.activeId : null;
+        state.sidebarCollapsed = Boolean(data.sidebarCollapsed);
+        return true;
+      } catch (error) {
+        console.error("Failed to load workspace:", error);
+        return false;
+      }
+    }
+
+    function setupButtons() {
+      dom.toggleSidebarBtn.onclick = toggleSidebar;
+      dom.activityExplorer.onclick = toggleSidebar;
+      document.getElementById("newBtn").onclick = () => openCreateDialog();
+      document.getElementById("renameBtn").onclick = () => renameActive();
+      document.getElementById("duplicateBtn").onclick = () => duplicateActive();
+      document.getElementById("deleteBtn").onclick = () => deleteActive();
+      document.getElementById("exportBtn").onclick = () => exportActive();
+      document.getElementById("importBtn").onclick = () => dom.importInput.click();
+
+      dom.importInput.onchange = (event) => {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          const text = typeof reader.result === "string" ? reader.result : "";
+          const [base, ext] = splitFileName(file.name);
+          createFileNote(`${base || "Imported"}${ext ? `.${ext}` : ""}`, text);
+          dom.importInput.value = "";
+        };
+        reader.readAsText(file);
+      };
+    }
+
+    function splitFileName(fileName) {
+      const idx = fileName.lastIndexOf(".");
+      if (idx === -1) return [fileName, ""];
+      return [fileName.slice(0, idx), fileName.slice(idx + 1)];
+    }
+
+    function openCreateDialog() {
+      dom.newFileName.value = "";
+      dom.modalWrap.classList.add("show");
+      dom.newFileName.focus();
+    }
+
+    function closeCreateDialog() {
+      dom.modalWrap.classList.remove("show");
+    }
+
+    function renameActive() {
+      const note = getActiveNote();
+      if (!note) return;
+      const next = prompt("Rename note:", getFileName(note));
+      if (next === null) return;
+      const parsed = parseFileNameInput(next);
+      note.title = parsed.title || note.title;
+      note.fileExt = parsed.fileExt;
+      note.language = parsed.language || note.language;
+      note.updatedAt = now();
+      persistNow();
+      renderAll();
+    }
+
+    function duplicateActive() {
+      const note = getActiveNote();
+      if (!note) return;
+      createNote({
+        title: `${note.title}-copy`,
+        language: note.language,
+        content: note.content
+      });
+      const latest = state.notes[state.notes.length - 1];
+      if (latest) latest.fileExt = note.fileExt || "";
+      persistNow();
+      renderAll();
+    }
+
+    function deleteNoteById(noteId) {
+      const note = getNote(noteId);
+      if (!note) return;
+      if (!confirm(`Delete \"${getFileName(note)}\"?`)) return;
+      state.notes = state.notes.filter((n) => n.id !== note.id);
+      state.openIds = state.openIds.filter((id) => id !== note.id);
+      disposeModel(note.id);
+      if (state.activeId === note.id) {
+        state.activeId = state.openIds[state.openIds.length - 1] || (state.notes[0] && state.notes[0].id) || null;
+      }
+      if (state.activeId) setActive(state.activeId);
+      persistNow();
+      renderAll();
+    }
+
+    function deleteActive() {
+      const note = getActiveNote();
+      if (!note) return;
+      deleteNoteById(note.id);
+    }
+
+    function exportActive() {
+      const note = getActiveNote();
+      if (!note) return;
+      syncActiveFromEditor();
+      const ext = note.fileExt || extensionMap[note.language] || "txt";
+      const blob = new Blob([note.content], { type: "text/plain;charset=utf-8" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = ext ? `${note.title}.${ext}` : note.title;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+
+    function setupShortcuts() {
+      document.addEventListener("keydown", (event) => {
+        const key = event.key.toLowerCase();
+        const meta = event.ctrlKey || event.metaKey;
+
+        if (meta && key === "n") {
+          event.preventDefault();
+          openCreateDialog();
+          return;
+        }
+        if (meta && key === "s") {
+          event.preventDefault();
+          syncActiveFromEditor();
+          persistNow();
+          renderTabs();
+          renderNoteList();
+          return;
+        }
+        if (meta && key === "k") {
+          event.preventDefault();
+          dom.searchInput.focus();
+          dom.searchInput.select();
+          return;
+        }
+        if (meta && key === "b") {
+          event.preventDefault();
+          toggleSidebar();
+          return;
+        }
+        if (event.altKey && /^[1-9]$/.test(key)) {
+          const index = Number(key) - 1;
+          const target = state.openIds[index];
+          if (target) {
+            event.preventDefault();
+            setActive(target);
+          }
+        }
+      });
+    }
+
+    function bindUI() {
+      dom.searchInput.oninput = (event) => {
+        state.search = event.target.value;
+        renderNoteList();
+      };
+      dom.langFilter.onchange = (event) => {
+        state.languageFilter = event.target.value;
+        renderNoteList();
+      };
+
+      document.getElementById("cancelCreate").onclick = closeCreateDialog;
+      document.getElementById("confirmCreate").onclick = () => {
+        createFileNote(dom.newFileName.value || "untitled.txt");
+        closeCreateDialog();
+      };
+      dom.newFileName.onkeydown = (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          createFileNote(dom.newFileName.value || "untitled.txt");
+          closeCreateDialog();
+        }
+      };
+
+      dom.modalWrap.onclick = (event) => {
+        if (event.target === dom.modalWrap) closeCreateDialog();
+      };
+
+      window.addEventListener("resize", () => {
+        if (!isMobile()) {
+          dom.app.classList.remove("sidebar-open-mobile");
+          applySidebarState();
+        }
+      });
+    }
+
+    function initializeWorkspace() {
+      const hasSaved = loadState();
+      if (!hasSaved || state.notes.length === 0) {
+        createNote({
+          title: "welcome",
+          fileExt: "md",
+          language: "markdown",
+          content: "# DevOps NodePad\n\n- Create files via filename.ext\n- Focused for YAML, shell, Dockerfile and infra notes\n- Explorer toggle (Ctrl/Cmd+B)"
+        });
+        const welcome = state.notes[state.notes.length - 1];
+        if (welcome) welcome.fileExt = "md";
+      }
+
+      state.openIds = state.openIds.filter((id) => state.notes.some((n) => n.id === id));
+      if (state.openIds.length === 0 && state.notes[0]) {
+        state.openIds = [state.notes[0].id];
+      }
+      if (!state.activeId || !state.notes.some((n) => n.id === state.activeId)) {
+        state.activeId = state.openIds[0] || state.notes[0].id;
+      }
+
+      applySidebarState();
+      setActive(state.activeId);
+      renderAll();
+    }
+
+    require.config({ paths: { vs: "https://unpkg.com/monaco-editor@0.45.0/min/vs" } });
+    require(["vs/editor/editor.main"], () => {
+      monaco.editor.defineTheme("candy-pink-dark", {
+        base: "vs-dark",
+        inherit: true,
+        rules: [
+          { token: "comment", foreground: "C0A2DA" },
+          { token: "string", foreground: "FFA7DD" },
+          { token: "number", foreground: "FFD08F" },
+          { token: "keyword", foreground: "FF4FB5", fontStyle: "bold" },
+          { token: "identifier", foreground: "FDF3FF" },
+          { token: "delimiter", foreground: "EAD9FF" },
+          { token: "type.identifier", foreground: "9FEFFF" },
+          { token: "function", foreground: "D0A9FF" }
+        ],
+        colors: {
+          "editor.background": "#110A1E",
+          "editor.foreground": "#FDF3FF",
+          "editorLineNumber.foreground": "#9A79BF",
+          "editorLineNumber.activeForeground": "#FCEFFF",
+          "editorCursor.foreground": "#FF86D7",
+          "editor.selectionBackground": "#7A2C9F",
+          "editor.inactiveSelectionBackground": "#612780",
+          "editor.lineHighlightBackground": "#25143B",
+          "editorIndentGuide.background": "#57357A",
+          "editorIndentGuide.activeBackground": "#C194FF",
+          "editorSuggestWidget.background": "#24113A",
+          "editorSuggestWidget.border": "#8C59BE",
+          "editorSuggestWidget.selectedBackground": "#4A246E",
+          "editorWidget.background": "#24113A",
+          "editorWidget.border": "#8C59BE"
+        }
+      });
+
+      editor = monaco.editor.create(dom.editor, {
+        value: "",
+        language: "markdown",
+        theme: "candy-pink-dark",
+        automaticLayout: true,
+        minimap: { enabled: false },
+        fontFamily: "Consolas, 'Courier New', monospace",
+        fontSize: 13,
+        lineHeight: 20,
+        scrollBeyondLastLine: false,
+        tabSize: 2,
+        smoothScrolling: true,
+        cursorBlinking: "smooth",
+        cursorSmoothCaretAnimation: "on"
+      });
+
+      setupButtons();
+      setupShortcuts();
+      bindUI();
+      initializeWorkspace();
+    });
+  </script>
+</body>
+</html>
